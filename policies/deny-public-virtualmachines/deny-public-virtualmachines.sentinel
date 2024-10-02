@@ -1,0 +1,18 @@
+# Sentinel policy to deny the creation of a virtual machine with a public IP address
+
+import "tfplan"
+
+# Define the main rule
+main = rule {
+    all tfplan.resource_changes as _, rc {
+        rc.type is "azurerm_virtual_machine" and
+        rc.change.after.network_interface_ids is not null and
+        all rc.change.after.network_interface_ids as ni_id {
+            ni = tfplan.resource_changes[ni_id]
+            ni.change.after.ip_configuration is not null and
+            all ni.change.after.ip_configuration as ip_config {
+                ip_config.public_ip_address_id is null
+            }
+        }
+    }
+}
